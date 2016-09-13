@@ -5,6 +5,38 @@
 //                                               written     2001/02/22 //
 //                                               last modify ----/--/-- //
 //////////////////////////////////////////////////////////////////////////
+
+//REGISTER
+////////////////////////////////////////////////////////////////////////////////////////////////
+//   COMMON NAME  |  ADDRESS  |    BITS    |                      NOTES                       //
+//--------------------------------------------------------------------------------------------//
+//                |           |            |  NMI enable (V), PPU master/slave (P),	      //
+//      PPUCTRL	  |  $2000    | VPHB SINN  |  sprite height (H), background tile select (B),  //
+//		  |	      |		   |  sprite tile select (S), increment mode (I),     //
+//		  |	      |		   |  nametable select (NN)                           //
+//--------------------------------------------------------------------------------------------//
+//                |           |            |  color emphasis (BGR), sprite enable (s),	      //
+//      PPUMASK	  |  $2001    | BGRs bMmG  |  background enable (b),  			      //
+//		  |	      |		   |  sprite left column enable (M),		      //
+//		  |	      |		   |  background left column enable (m), greyscale (G)//
+//--------------------------------------------------------------------------------------------//
+//                |           |            |  vblank (V), sprite 0 hit (S), 		      //
+//    PPUSTATUS	  |  $2002    | VSO- ----  |  sprite overflow (O),  			      //
+//		  |	      |		   |  read resets write pair for $2005/2006	      //
+//--------------------------------------------------------------------------------------------//
+//    OAMADDR	  |  $2003    | aaaa aaaa  |  OAM read/write address			      //
+//--------------------------------------------------------------------------------------------//
+//    OAMDATA     |  $2004    | dddd dddd  |  OAM data read/write			      //
+//--------------------------------------------------------------------------------------------//
+//    PPUSCROLL	  |  $2005    | xxxx xxxx  |  fine scroll position (two writes: X, Y)	      //
+//--------------------------------------------------------------------------------------------//
+//    PPUADDR	  |  $2006    | aaaa aaaa  |  PPU read/write address (two writes: MSB, LSB)   //
+//--------------------------------------------------------------------------------------------//
+//    PPUDATA	  |  $2007    | dddd dddd  |  PPU data read/write			      //
+//--------------------------------------------------------------------------------------------//
+//    OAMDMA	  |  $4014    | aaaa aaaa  |  OAM DMA high address   			      //
+////////////////////////////////////////////////////////////////////////////////////////////////
+
 #define	WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <stdio.h>
@@ -29,7 +61,7 @@ PPU::PPU( NES* parent ) : nes(parent)
 {
 	lpScreen = NULL;
 
-	// ¶‰E”½“]ƒ}ƒXƒNƒe[ƒuƒ‹
+	// ì¢Œìš° ë°˜ì „ ë§ˆìŠ¤í¬ í…Œì´ë¸”
 	for( INT i = 0; i < 256; i++ ) {
 		BYTE	m = 0x80;
 		BYTE	c = 0;
@@ -63,7 +95,7 @@ void	PPU::Reset()
 	loopy_shift = 0;
 
 	if( lpScreen )
-		::memset( lpScreen, 0x3F, SCREEN_WIDTH*SCREEN_HEIGHT*sizeof(BYTE) );
+		::memset( lpScreen, 0x3F, SCREEN_WIDTH*SCREEN_HEIGHT*sizeof(BYTE) );	//0x3F(RGB ìƒ‰ìƒìœ¼ë¡œ ê±°ì˜ ê²€ì •ìƒ‰, asciiì½”ë“œë¡œëŠ” ë¬¼ìŒí‘œ)ë¡œ ì…‹íŒ…
 }
 
 BYTE	PPU::Read( WORD addr )
@@ -77,7 +109,7 @@ BYTE	data = 0x00;
 		case	0x2003: // SPR-RAM Address Register(W)
 		case	0x2005: // PPU Scroll Register(W2)
 		case	0x2006: // VRAM Address Register(W2)
-			data = PPU7_Temp;	// ‘½•ª
+			data = PPU7_Temp;	// å¤šåˆ†
 			break;
 		// Read/Write Register
 		case	0x2002: // PPU Status Register(R)
@@ -202,17 +234,17 @@ WORD	addr = data<<8;
 		SPRAM[i] = nes->Read( addr++ );
 	}
 }
-
+//vblankëŠ” ì˜ìƒí‘œì‹œì¥ì¹˜ì—ì„œ ë‹¤ìŒ ìŠ¤í¬ë¦° í•„ë“œë¥¼ ì°¾ê¸° ìœ„í•´ ìŠ¤í¬ë¦°ì˜ ì²«ë²ˆì§¸ ë¼ì¸ìœ¼ë¡œ ë“¤ì–´ê°€ëŠ” ë™ì•ˆ ì ì‹œ ë©ˆì¶”ëŠ” ê¸°ê°„
 void	PPU::VBlankStart()
 {
-	PPUREG[2] |= PPU_VBLANK_FLAG;
+	PPUREG[2] |= PPU_VBLANK_FLAG;	//vblank ì…‹íŒ…
 }
 
 void	PPU::VBlankEnd()
 {
-	PPUREG[2] &= ~PPU_VBLANK_FLAG;
-	// VBlank’Eo‚ÉƒNƒŠƒA‚³‚ê‚é
-	// ƒGƒLƒTƒCƒgƒoƒCƒN‚Åd—v
+	PPUREG[2] &= ~PPU_VBLANK_FLAG;	//vblank í•´ì œ
+	// VBlank íƒˆì¶œí•  ë•Œê¹Œì§€ ì œê±°
+	// ìµì‚¬ì´íŠ¸ ë°”ì´í¬ì—ì„œ ì¤‘ìš”
 	PPUREG[2] &= ~PPU_SPHIT_FLAG;
 }
 
@@ -682,7 +714,7 @@ BYTE	BGmono[33+1];
 	// Render sprites
 	PPUREG[2] &= ~PPU_SPMAX_FLAG;
 
-	// •\¦ŠúŠÔŠO‚Å‚ ‚ê‚ÎƒLƒƒƒ“ƒZƒ‹
+	// í‘œì‹œ ê¸°ê°„ ì™¸ì˜ ê²½ìš° ì·¨ì†Œ
 	if( scanline > 239 )
 		return;
 
@@ -713,7 +745,7 @@ BYTE	BGmono[33+1];
 
 	for( INT i = 0; i < 64; i++, sp++ ) {
 		sp_y = scanline - (sp->y+1);
-		// ƒXƒLƒƒƒ“ƒ‰ƒCƒ““à‚ÉSPRITE‚ª‘¶İ‚·‚é‚©‚ğƒ`ƒFƒbƒN
+		// ìŠ¤ìº” ë¼ì¸ì— spriteê°€ ì¡´ì¬í•˜ëŠ”ì§€ í™•ì¸
 		if( sp_y != (sp_y & sp_h) )
 			continue;
 
@@ -819,14 +851,14 @@ BYTE	BGmono[33+1];
 	}
 }
 
-// ƒXƒvƒ‰ƒCƒg‚O‚ªƒqƒbƒg‚·‚é‚©‚à’m‚ê‚È‚¢ƒ‰ƒCƒ“H
+// ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆï¼ãŒãƒ’ãƒƒãƒˆã™ã‚‹ã‹ã‚‚çŸ¥ã‚Œãªã„ãƒ©ã‚¤ãƒ³ï¼Ÿ
 BOOL	PPU::IsSprite0( INT scanline )
 {
-	// ƒXƒvƒ‰ƒCƒgorBG”ñ•\¦‚ÍƒLƒƒƒ“ƒZƒ‹(ƒqƒbƒg‚µ‚È‚¢)
+	// ìŠ¤í”„ë¼ì´íŠ¸ orBG ìˆ¨ê¸°ê¸° ì·¨ì†Œ(ãƒ’ãƒƒãƒˆã—ãªã„)
 	if( (PPUREG[1]&(PPU_SPDISP_BIT|PPU_BGDISP_BIT)) != (PPU_SPDISP_BIT|PPU_BGDISP_BIT) )
 		return	FALSE;
 
-	// Šù‚Éƒqƒbƒg‚µ‚Ä‚¢‚½‚çƒLƒƒƒ“ƒZƒ‹
+	// æ—¢ã«ãƒ’ãƒƒãƒˆã—ã¦ã„ãŸã‚‰ã‚­ãƒ£ãƒ³ã‚»ãƒ«
 	if( PPUREG[2]&PPU_SPHIT_FLAG )
 		return	FALSE;
 
@@ -852,11 +884,11 @@ LPSPRITE sp;
 
 	PPUREG[2] &= ~PPU_SPMAX_FLAG;
 
-	// ƒXƒvƒ‰ƒCƒg”ñ•\¦‚ÍƒLƒƒƒ“ƒZƒ‹
+	// ìŠ¤í”„ë¼ì´íŠ¸ ìˆ¨ê¸°ê¸° ì·¨ì†Œ
 	if( !(PPUREG[1]&PPU_SPDISP_BIT) )
 		return;
 
-	// •\¦ŠúŠÔŠO‚Å‚ ‚ê‚ÎƒLƒƒƒ“ƒZƒ‹
+	// í‘œì‹œ ê¸°ê°„ ì™¸ì˜ ê²½ìš° ì·¨ì†Œ
 	if( scanline < 0 || scanline > 239 )
 		return;
 
@@ -866,7 +898,7 @@ LPSPRITE sp;
 	spmax = 0;
 	// Sprite Max check
 	for( i = 0; i < 64; i++, sp++ ) {
-		// ƒXƒLƒƒƒ“ƒ‰ƒCƒ““à‚ÉSPRITE‚ª‘¶İ‚·‚é‚©‚ğƒ`ƒFƒbƒN
+		// ìŠ¤ìº” ë¼ì¸ì— spriteê°€ ì¡´ì¬í•˜ëŠ”ì§€ í™•ì¸
 		if( (scanline < (INT)sp->y+1) || (scanline > ((INT)sp->y+sp_h+1)) ) {
 			continue;
 		}
